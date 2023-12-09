@@ -1,13 +1,10 @@
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-# from user.middleware import api_key_required
 from django.contrib.sites.shortcuts import get_current_site
-
 
 from .throttles import AuthenticatedUserThrottle, AnonymousUserThrottle
 from rest_framework.permissions import AllowAny
-
 
 from user.models import *
 
@@ -26,9 +23,6 @@ from django.http import JsonResponse
 from PIL import Image , UnidentifiedImageError, ExifTags
 import piexif
 import os
-from django.http import HttpResponse
-
-from tempfile import NamedTemporaryFile
 
 from django.views.decorators.csrf import csrf_exempt
 
@@ -109,9 +103,9 @@ def upload_image_authenticate(request):
             'exif_data': exif_info,
         }
 
-        return JsonResponse(response_data, status=status.HTTP_201_CREATED)
+        return JsonResponse(response_data)
 
-    return JsonResponse({'error': 'Invalid request method'}, status=status.HTTP_400_BAD_REQUEST)
+    return JsonResponse({'error': 'Invalid request method'})
 
 
 @api_view(['POST'])
@@ -119,12 +113,11 @@ def upload_image_authenticate(request):
 def upload_image_unauthenticate(request):
     if request.method == 'POST':
         try:
-            # Use request.FILES to access the uploaded file
             image = request.FILES['file']
         except KeyError:
-            return JsonResponse({'error': 'Missing file in the request'}, status=status.HTTP_400_BAD_REQUEST)
+            return JsonResponse({'error': 'Missing file in the request'})
 
-        original_filename = image.name  # Access the name of the uploaded file
+        original_filename = image.name 
         image_dir = os.path.join(settings.BASE_DIR, 'media', 'received')
         
         if not os.path.exists(image_dir):
@@ -137,7 +130,6 @@ def upload_image_unauthenticate(request):
             for chunk in image.chunks():
                 file.write(chunk)
 
-        # Get Exif information using the new function
         exif_info = get_exif_info(absolute_image_path)
 
         request.session['uploaded_image_path'] = absolute_image_path
@@ -166,24 +158,21 @@ def resize_image(request):
         try:
             height = int(request.data['height'])
             width = int(request.data['width'])
-            image_path = request.data['image_path']  # Add this line to get the image path from the request
+            image_path = request.data['image_path'] 
         except (KeyError, ValueError):
-            return Response({'error': 'Missing or invalid height/width parameters'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Missing or invalid height/width parameters'})
 
         if not os.path.exists(image_path):
-            return Response({'error': 'Invalid image path'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Invalid image path'})
 
         try:
-            # Create the 'resized' directory if it doesn't exist
             resized_dir = os.path.join(settings.BASE_DIR, 'media', 'resized')
             if not os.path.exists(resized_dir):
                 os.makedirs(resized_dir)
 
-            # Open the image
             with open(image_path, 'rb') as file:
                 img = Image.open(file)
 
-                # Resize the image
                 resized_image = img.resize((width, height))
 
                 # Save the resized image in the 'resized' folder

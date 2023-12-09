@@ -6,7 +6,7 @@ class CustomTokenAuthentication(TokenAuthentication):
         user_auth_tuple = super().authenticate(request)
 
         if user_auth_tuple is None:
-            return None, None  # Return a tuple to avoid unpacking error
+            return None, None  
 
         user, auth_token = user_auth_tuple
         if not user:
